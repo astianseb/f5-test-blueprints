@@ -80,10 +80,8 @@ node_templates:
       openstack_config: *openstack_config
       agent_config:
         install_method: none
-      server:
-        key_name: ''
-        image: "BIGIP-13.0.0.2.0.1671"
-        flavor: m1.xlarge
+      image: "BIGIP-13.0.0.2.0.1671"
+      flavor: m1.xlarge
       management_network_name: { get_property: [ mgmt_network, resource_id ] }
     interfaces:
       cloudify.interfaces.lifecycle:
@@ -133,7 +131,6 @@ node_templates:
     properties:
       openstack_config: *openstack_config
       security_group:
-        name: fortinet_security_group
         description: generic security group
       rules:
         - remote_ip_prefix: 0.0.0.0/0
