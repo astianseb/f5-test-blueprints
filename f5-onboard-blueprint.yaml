@@ -7,6 +7,60 @@ imports:
 
 inputs:
 
+  onboard_yaml:
+    type: string
+    default: |
+      #cloud-config
+      ##############################################
+      ###     EXAMPLE BIG-IP CLOUD-CONFIG        ###
+      ##############################################
+      write_files:
+
+      - path: /config/cloud/onboard.sh
+        permissions: 0755
+        owner: root:root
+        content: |
+          #!/bin/bash
+
+          # Load Input Parameters
+          . /config/cloud/onboard_config_vars
+
+          # Download Onboarding Libs.
+          # Could be pre-packaged or hosted internally
+          curl -o /config/cloud/f5-cloud-libs.tar.gz --silent --fail --retry 20 -L https://api.github.com/repos/F5Networks/f5-cloud-libs/tarball/develop
+          tar xvzf /config/cloud/f5-cloud-libs.tar.gz -C /config/cloud/
+          mv /config/cloud/F5Networks-f5-cloud-libs-* /config/cloud/f5-cloud-libs
+          cd /config/cloud/f5-cloud-libs
+          npm install --production
+
+          # License / Provision
+          f5-rest-node /config/cloud/f5-cloud-libs/scripts/onboard.js \
+              -o  /var/log/onboard.log \
+              --no-reboot  \
+              --log-level verbose \
+              --host localhost \
+              --user admin \
+              --password admin \
+              --port 443 \
+              --hostname ${HOSTNAME} \
+              --global-setting hostname:${HOSTNAME} \
+              --set-root-password old:default,new:${BIGIP_ROOT_PASSWORD} \
+              --ping www.f5.com 30 15 \
+
+      - path: /config/cloud/onboard_config_vars
+        permissions: 0755
+        owner: root:root
+        content: |
+          #!/bin/bash
+
+          HOSTNAME=sg-bigip.com
+          BIGIP_ADMIN_USERNAME=admin
+          BIGIP_ADMIN_PASSWORD=demo
+          BIGIP_ROOT_PASSWORD=demo
+          BIGIP_LICENSE_KEY=ZBVNS-ZSZRE-ISOTV-TSQIF-RYAOUQH
+
+      runcmd:
+        - /config/cloud/onboard.sh &
 
 
 dsl_definitions:
@@ -37,7 +91,7 @@ node_templates:
           inputs:
             args:
               config_drive: true
-              user_data: templates/onboard.yaml
+              userdata: {get_input: onboard_yaml}
     relationships:
     - type: cloudify.openstack.server_connected_to_port
       target: mgmt_port
