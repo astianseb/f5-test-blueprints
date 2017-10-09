@@ -196,4 +196,8 @@ node_templates:
 outputs:
 
   f5_mgmt_ip:
-    value: { get_attribute: [f5_vnf, floating_ip] }
+    value: { get_attribute: [f5_vnf, ip] }
+  f5_outside_ip:
+    value: {get_attribute: [f5_vnf, networks, sg-outside, 0]}
+  f5_inside_ip:
+    value: {get_attribute: [f5_vnf, networks, sg-outside, 0]}

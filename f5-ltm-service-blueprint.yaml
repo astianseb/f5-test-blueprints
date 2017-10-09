@@ -1,0 +1,89 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.0.1/types.yaml
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-openstack-plugin/2.2.0/plugin.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-utilities-plugin/1.3.0/plugin.yaml
+inputs:
+
+  app_node_1_ip:
+    type: string
+    description: >
+      IP address of application server
+    default: ''
+
+  app_node_1_port:
+    type: string
+    description: >
+      Port of application server
+
+  app_node_2_ip:
+    type: string
+    description: > 
+      IP address of application server
+    default: ''
+
+  app_node_2_port:
+    type: string
+    description: >
+      Port of application server
+
+  destination_port:
+    type: string
+    description: >
+      Port on which application is exposed on F5
+
+node_templates:
+
+  f5_baseline_vnf_deployment:
+    type: cloudify.nodes.DeploymentProxy
+    properties:
+      resource_config:
+        blueprint:
+          id: f5-baseline-blueprint
+          external_resource: true
+        deployment:
+          id: f5-baseline
+          external_resource: true
+          outputs:
+            mgmt_ip: f5_mgmt_ip
+            outside_ip: f5_outside_ip
+            inside_ip: f5_inside_ip
+
+  f5_ltm_service:
+    type: cloudify.terminal.raw
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            terminal_auth: &terminal_auth
+              user: root
+              password: default
+              ip: { get_attribute: [f5_baseline_vnf_deployment, deployment, outputs, mgmt_ip ] }
+              promt_check:
+                - '#'
+                - '$'
+              errors:
+                - "Command fail."
+            calls:
+              - action: exit
+        start: 
+          inputs:
+            terminal_auth: *terminal_auth
+            calls:
+              - template: templates/f5-ltm-start.txt
+                params:
+                  APP_NODE_1_IP: { get_input: app_node_1_ip }
+                  APP_NODE_1_PORT: { get_input: app_node_1_port }
+                  APP_NODE_2_IP: { get_input: app_node_2_ip }
+                  APP_NODE_2_PORT: { get_input: app_node_2_port }
+                  DESTINATION_IP: { get_attribute: [f5_baseline_vnf_deployment, deployment, outputs, f5_outside_ip ] } 
+                  DESTINATION_PORT: { get_input: destination_port
+          inputs:
+            terminal_auth: *terminal_auth
+            calls:
+              - template: templates/fortigate-portforward-stop.txt
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: fortigate_vnf_deployment
+
