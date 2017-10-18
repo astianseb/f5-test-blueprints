@@ -1,5 +1,5 @@
 app_node_1_ip: '192.168.20.50'
-app_node_1_port: '192.168.20.51'
-app_node_2_ip: '8080'
+app_node_1_port: '8080'
+app_node_2_ip: '192.168.20.51'
 app_node_2_port: '8080'
 destination_port: '8888'

@@ -46,9 +46,9 @@ node_templates:
           id: f5-baseline
           external_resource: true
           outputs:
-            mgmt_ip: f5_mgmt_ip
-            outside_ip: f5_outside_ip
-            inside_ip: f5_inside_ip
+            f5_mgmt_ip: mgmt_ip
+            f5_outside_ip: outside_ip
+            f5_inside_ip: inside_ip
 
   f5_ltm_service:
     type: cloudify.terminal.raw
@@ -71,19 +71,20 @@ node_templates:
           inputs:
             terminal_auth: *terminal_auth
             calls:
-              - template: templates/f5-ltm-start.txt
+              - template: templates/f5-ltm-service-start.txt
                 params:
                   APP_NODE_1_IP: { get_input: app_node_1_ip }
                   APP_NODE_1_PORT: { get_input: app_node_1_port }
                   APP_NODE_2_IP: { get_input: app_node_2_ip }
                   APP_NODE_2_PORT: { get_input: app_node_2_port }
-                  DESTINATION_IP: { get_attribute: [f5_baseline_vnf_deployment, deployment, outputs, f5_outside_ip ] } 
-                  DESTINATION_PORT: { get_input: destination_port
+                  DESTINATION_IP: { get_attribute: [f5_baseline_vnf_deployment, deployment, outputs, outside_ip ] }      
+                  DESTINATION_PORT: { get_input: destination_port }
+        stop:
           inputs:
             terminal_auth: *terminal_auth
             calls:
-              - template: templates/fortigate-portforward-stop.txt
+              - template: templates/f5-ltm-service-stop.txt
     relationships:
       - type: cloudify.relationships.depends_on
-        target: fortigate_vnf_deployment
+        target: f5_baseline_vnf_deployment
 
